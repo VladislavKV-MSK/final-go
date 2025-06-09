@@ -12,7 +12,7 @@ import (
 func main() {
 	// Проверяем существование файла .env
 	if err := godotenv.Load(); err != nil {
-		log.Fatal("ошибка загрузки .env")
+		log.Println("ошибка загрузки .env")
 	}
 	// Создаем БД
 	db.InitDB()
