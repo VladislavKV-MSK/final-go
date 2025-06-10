@@ -32,7 +32,8 @@ godoc -http=:6060
 ### Требования
 - Go 1.24+
 - SQLite 3
-
+- Docker v4.41.2
+  
 ### Установка
 ```bash
 git clone https://github.com/VladislavKV-MSK/final-go.git
