@@ -110,6 +110,7 @@ curl -X POST http://localhost:7540/api/signin \
      -H "Content-Type: application/json" \
      -d '{"password":"ваш_пароль_из_TODO_PASSWORD"}'
 ```
+Затем запускайте тесты
 
 ```bash
 go test -v ./...
