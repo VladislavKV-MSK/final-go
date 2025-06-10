@@ -4,16 +4,14 @@ import (
 	"fmt"
 	"go1f/pkg/db"
 	"go1f/pkg/server"
-	"log"
 
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Проверяем существование файла .env
-	if err := godotenv.Load(); err != nil {
-		log.Println("ошибка загрузки .env")
-	}
+	// Загружаем файла .env
+	_ = godotenv.Load()
+
 	// Создаем БД
 	db.InitDB()
 	defer db.CloseDB()
