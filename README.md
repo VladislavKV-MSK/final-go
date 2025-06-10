@@ -20,7 +20,7 @@
 
 ```bash
 # Локальный просмотр
-godoc -http=:6060
+GO111MODULE=on godoc -http=:6060
 ```
 Затем откройте http://localhost:6060/pkg/github.com/VladislavKV-MSK/final-go/
 
