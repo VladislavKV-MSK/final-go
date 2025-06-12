@@ -5,8 +5,8 @@ package server
 import (
 	"fmt"
 	"go1f/pkg/api"
+	"go1f/pkg/config"
 	"net/http"
-	"os"
 )
 
 // Run запускает HTTP-сервер приложения.
@@ -16,7 +16,7 @@ import (
 // Порт для прослушивания берется из переменной окружения TODO_PORT.
 func Run() error {
 
-	port := os.Getenv("TODO_PORT")
+	port := config.App.PortServ
 
 	api.Init()
 

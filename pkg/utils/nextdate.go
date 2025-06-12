@@ -1,5 +1,21 @@
-// Package api предоставляет функционал для работы API сервиса.
-package api
+// Package utils предоставляет утилиты для работы с датами, включая расчет следующих дат
+// выполнения задач на основе правил повторения и поддержку стандартного формата дат.
+//
+// Основные возможности:
+//   - Расчет следующей даты для задач с повторением (ежедневно, еженедельно, ежемесячно, ежегодно).
+//   - Парсинг и валидация строковых правил повторения.
+//   - Работа с особыми днями месяца (последний, предпоследний день).
+//   - Конвертация между строковыми и числовыми представлениями дат.
+//
+// Форматы:
+//   - Дата: "YYYYMMDD".
+//   - Правила повторения:
+//   - "y"       — ежегодно.
+//   - "d N"     — каждые N дней (1 ≤ N ≤ 400).
+//   - "w D1,D2" — по дням недели (1-7, где 1-понедельник, 7-воскресенье).
+//   - "m D1,D2 [M1,M2]" — по дням месяца (1-31, -1 — последний день, -2 — предпоследний)
+//     с опциональным списком месяцев (1-12).
+package utils
 
 import (
 	"fmt"
@@ -14,7 +30,7 @@ var errForamt = fmt.Errorf("error format dstart or repeat")
 
 // Константы для валидации:
 const (
-	dateFormat = "20060102" // Формат даты (YYYYMMDD)
+	DateFormat = "20060102" // Формат даты (YYYYMMDD)
 	max_day    = 400        // Максимальный интервал для ежедневного повтора
 	max_wday   = 7          // Максимальное количество дней в неделе
 	max_month  = 12         // Максимальное количество месяцев
@@ -35,14 +51,14 @@ const (
 // Возвращает:
 //   - следующую дату в формате "YYYYMMDD"
 //   - ошибку при неверном формате входных данных или пустую строку для разовых задач
-func nextDate(now time.Time, dstart string, repeat string) (string, error) {
+func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 
 	if repeat == "" { // разовая задача,  будет удалена после
 		return "", nil
 	}
 
 	// париснг repeat, dstart
-	date, err := time.Parse(dateFormat, dstart)
+	date, err := time.Parse(DateFormat, dstart)
 	if err != nil {
 		return "", errForamt
 	}
@@ -55,7 +71,7 @@ func nextDate(now time.Time, dstart string, repeat string) (string, error) {
 		for {
 			date = date.AddDate(1, 0, 0)
 			if afterNow(date, now) {
-				return date.Format(dateFormat), nil
+				return date.Format(DateFormat), nil
 			}
 		}
 	case "d":
@@ -70,7 +86,7 @@ func nextDate(now time.Time, dstart string, repeat string) (string, error) {
 		for {
 			date = date.AddDate(0, 0, interval)
 			if afterNow(date, now) {
-				return date.Format(dateFormat), nil
+				return date.Format(DateFormat), nil
 			}
 		}
 	case "w":
@@ -88,7 +104,7 @@ func nextDate(now time.Time, dstart string, repeat string) (string, error) {
 				weekday = 7
 			}
 			if dmap[weekday] && afterNow(date, now) {
-				return date.Format(dateFormat), nil
+				return date.Format(DateFormat), nil
 			}
 		}
 	case "m":
@@ -192,14 +208,14 @@ func arrangeSpecialDays(days []int) []int {
 // Возвращает ошибку при неверном формате.
 func parseDays(s string) ([]int, error) {
 	dayStr := strings.Split(s, ",")
-	dayInt, err := StringsToInts(dayStr) // [случайный порядок]
+	dayInt, err := stringsToInts(dayStr) // [случайный порядок]
 	slices.Sort(dayInt)                  //[-1, -2, 15]
 	result := arrangeSpecialDays(dayInt) // [15, -2, -1] верный порядок
 	return result, err
 }
 
 // StringsToInts конвертирует слайс строк в слайс целых чисел с валидацией
-func StringsToInts(strs []string) ([]int, error) {
+func stringsToInts(strs []string) ([]int, error) {
 	ints := make([]int, 0, len(strs))
 	for _, s := range strs {
 		num, err := strconv.Atoi(s)
@@ -263,7 +279,7 @@ func findMonthDay(now, date time.Time, daysStr string, months ...string) (string
 			}
 
 			if target.After(now) {
-				return target.Format(dateFormat), nil
+				return target.Format(DateFormat), nil
 			}
 		}
 

@@ -5,8 +5,8 @@ import (
 	"go1f/pkg/db"
 	"log"
 	"net/http"
-	"os"
-	"strconv"
+
+	"go1f/pkg/config"
 )
 
 // tasksHandler обрабатывает HTTP-запросы для работы с задачами.
@@ -15,7 +15,7 @@ import (
 //   - search: строка для поиска задач по контексту или дате (необязательный)
 //
 // Если параметр search не указан, возвращает список задач с ограничением по количеству,
-// которое задается переменной окружения LIMIT_TASKS (по умолчанию 50).
+// которое задается переменной окружения TODO_LIMIT_TASKS (по умолчанию 50).
 //
 // В случае ошибки возвращает соответствующий HTTP-статус и сообщение об ошибке.
 func tasksHandler(w http.ResponseWriter, r *http.Request) {
@@ -26,14 +26,10 @@ func tasksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	searchQuery := r.URL.Query().Get("search")
-	limit, err := strconv.Atoi(os.Getenv("LIMIT_TASKS"))
-	if err != nil {
-		limit = 50
-	}
 
 	if searchQuery == "" {
 		// просто n задач
-		tasks, err := db.GetTasks(limit)
+		tasks, err := db.GetTasks(config.App.LimitTask)
 		if err != nil {
 			log.Println("Ошибка при получении задачи из БД")
 			sendError(w, "ошибка получения задач", http.StatusInternalServerError)
@@ -42,7 +38,7 @@ func tasksHandler(w http.ResponseWriter, r *http.Request) {
 		sendResponse(w, tasks)
 	} else {
 		// n задач в которых есть определенные слова или даты
-		tasks, err := db.SearchTasks(searchQuery, limit)
+		tasks, err := db.SearchTasks(searchQuery, config.App.LimitTask)
 		if err != nil {
 			log.Println("Ошибка с поиском контекста в задачах")
 			sendError(w, "ошибка поиска задач", http.StatusInternalServerError)
@@ -59,7 +55,7 @@ func sendResponse(w http.ResponseWriter, tasks []*db.Task) {
 		tasks = []*db.Task{}
 	}
 
-	resp := db.TasksResp{
+	resp := TasksResp{
 		Tasks: tasks,
 	}
 

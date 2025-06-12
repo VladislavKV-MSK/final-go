@@ -5,11 +5,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"go1f/pkg/db"
+	"go1f/pkg/utils"
 	"log"
 	"net/http"
 	"sync"
 	"time"
 )
+
+// ErrorResponse представляет структуру для возврата ошибок в API.
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+// TasksResp представляет структуру для возврата списка задач в API.
+type TasksResp struct {
+	Tasks []*db.Task `json:"tasks"`
+}
 
 var taskMutex sync.Mutex
 var errTask error = fmt.Errorf("ошибка Task")
@@ -172,7 +183,7 @@ func handleDoneTask(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// Персчитываем дату для задачи
-		newDate, err := nextDate(time.Now(), task.Date, task.Repeat)
+		newDate, err := utils.NextDate(time.Now(), task.Date, task.Repeat)
 		if err != nil {
 			log.Println("Ошибка при пересчете даты задачи из БД")
 			sendError(w, "ошибка при расчете новой даты", http.StatusInternalServerError)
@@ -194,13 +205,18 @@ func handleDoneTask(w http.ResponseWriter, r *http.Request) {
 //
 // Возвращает новую дату в формате YYYYMMDD или описание ошибки.
 func nextDayHandler(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodGet {
+		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+
 	var now time.Time
 	var err error
 	nowParam := r.FormValue("now")
 
 	// Если параметр не пустой парсим его
 	if nowParam != "" {
-		now, err = time.Parse(dateFormat, nowParam)
+		now, err = time.Parse(utils.DateFormat, nowParam)
 		if err != nil {
 			log.Println("Ошибка с получением текущей даты")
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -214,13 +230,16 @@ func nextDayHandler(w http.ResponseWriter, r *http.Request) {
 	date := r.FormValue("date")
 	repeat := r.FormValue("repeat")
 
-	date, err = nextDate(now, date, repeat)
+	date, err = utils.NextDate(now, date, repeat)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	w.Write([]byte(date))
+	if _, err := w.Write([]byte(date)); err != nil {
+		log.Printf("Ошибка при записи ответа по дате: %v \n", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 // sendJSON отправляет ответ в формате JSON с указанным HTTP-статусом.
@@ -245,7 +264,7 @@ func sendJSON(w http.ResponseWriter, resp any, status int) {
 //   - message - текст сообщения об ошибке
 //   - statusCode - HTTP-статус ошибки
 func sendError(w http.ResponseWriter, message string, statusCode int) {
-	response := db.ErrorResponse{
+	response := ErrorResponse{
 		Error: message,
 	}
 	w.WriteHeader(statusCode)
@@ -269,7 +288,7 @@ func checkTask(t *db.Task) (string, error) {
 	}
 
 	now := time.Now()
-	today := now.Format("20060102")
+	today := now.Format(utils.DateFormat)
 
 	// Обработка пустой даты
 	if t.Date == "" {
@@ -278,7 +297,7 @@ func checkTask(t *db.Task) (string, error) {
 	}
 
 	// Парсинг даты
-	_, err := time.Parse("20060102", t.Date)
+	_, err := time.Parse(utils.DateFormat, t.Date)
 	if err != nil {
 		return "Поле Date указано неверно", errTask
 	}
@@ -293,7 +312,7 @@ func checkTask(t *db.Task) (string, error) {
 		t.Date = today
 	} else {
 		// С правилом - вычисляем следующую доступную дату
-		next, err := nextDate(now, t.Date, t.Repeat)
+		next, err := utils.NextDate(now, t.Date, t.Repeat)
 		if err != nil {
 			return "Неверное правило повторения: " + err.Error(), errTask
 		}

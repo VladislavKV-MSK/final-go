@@ -27,8 +27,13 @@ COPY --from=builder /app/main .
 COPY --from=builder /app/web ./web
 
 
+# Устанавливаем переменные окружения по умолчанию
+ENV TODO_PORT=7540 \
+    TODO_DBFILE=/data/scheduler.db \
+    TODO_LIMIT_TASKS=50
+
 # Порт приложения
-EXPOSE 7540
+EXPOSE $TODO_PORT
 
 # Команда запуска
 CMD ["./main"]

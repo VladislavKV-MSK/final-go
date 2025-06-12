@@ -9,6 +9,9 @@ import (
 	"os"
 	"time"
 
+	"go1f/pkg/config"
+	"go1f/pkg/utils"
+
 	_ "modernc.org/sqlite"
 )
 
@@ -21,16 +24,6 @@ type Task struct {
 	Repeat  string `json:"repeat"`
 }
 
-// ErrorResponse представляет структуру для возврата ошибок в API.
-type ErrorResponse struct {
-	Error string `json:"error"`
-}
-
-// TasksResp представляет структуру для возврата списка задач в API.
-type TasksResp struct {
-	Tasks []*Task `json:"tasks"`
-}
-
 var dbTask *sql.DB
 
 // InitDB инициализирует базу данных SQLite.
@@ -38,9 +31,9 @@ var dbTask *sql.DB
 // Создает таблицу scheduler и индекс по дате, если они не существуют.
 func InitDB() {
 
-	dbPath := os.Getenv("TODO_DBFILE")
+	dbPath := config.App.PathToDB // получаем путь из env или по умолчанию
 	if _, err := os.Stat(dbPath); err == nil {
-		fmt.Println("Файл БД уже существует, проверяем целостность... ")
+		log.Println("Файл БД уже существует, проверяем целостность...")
 	}
 
 	// Открываем/создаем базу данных
@@ -111,12 +104,7 @@ func AddTask(task *Task) (int64, error) {
 // Возвращает ошибку, если limit отрицательный.
 func GetTasks(limit int) ([]*Task, error) {
 
-	// Проверяем, что limit не отрицательный
-	if limit < 0 {
-		return nil, fmt.Errorf("limit не может быть отрицательным")
-	}
-
-	query := "SELECT * FROM scheduler ORDER BY date ASC LIMIT :limit"
+	query := "SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date ASC LIMIT :limit"
 
 	rows, err := dbTask.Query(query, sql.Named("limit", limit))
 	if err != nil {
@@ -148,25 +136,21 @@ func GetTasks(limit int) ([]*Task, error) {
 // Иначе ищет задачи, содержащие строку в title или comment.
 // Параметр limit ограничивает количество результатов.
 func SearchTasks(s string, limit int) ([]*Task, error) {
-	// Проверяем, что limit не отрицательный
-	if limit < 0 {
-		return nil, fmt.Errorf("limit не может быть отрицательным")
-	}
 
 	var date bool
 	var query string
 
 	t, err := time.Parse("02.01.2006", s)
 	if err == nil {
-		s = t.Format("20060102")
+		s = t.Format(utils.DateFormat)
 		date = true
 	}
 
 	if date {
-		query = `SELECT * FROM scheduler WHERE date = :search LIMIT :limit`
+		query = `SELECT id, date, title, comment, repeat FROM scheduler WHERE date = :search LIMIT :limit`
 	} else {
 		query = `
-        SELECT * 
+        SELECT id, date, title, comment, repeat 
         FROM scheduler
         WHERE title LIKE '%' || :search || '%' 
            OR comment LIKE '%' || :search || '%'
@@ -207,7 +191,7 @@ func SearchTasks(s string, limit int) ([]*Task, error) {
 func GetTaskID(id string) (Task, error) {
 
 	var task Task
-	query := `SELECT * FROM scheduler WHERE id = :id`
+	query := `SELECT id, date, title, comment, repeat FROM scheduler WHERE id = :id`
 
 	row := dbTask.QueryRow(query, sql.Named("id", id))
 	err := row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)

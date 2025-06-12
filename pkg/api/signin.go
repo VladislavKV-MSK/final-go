@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 	"time"
+
+	"go1f/pkg/config"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -53,13 +54,14 @@ func handleSignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	secretPassword := os.Getenv("TODO_PASSWORD")
+	secretPassword := config.App.PasswordTest
 	if secretPassword == "" {
 		sendError(w, "Аутентификация не настроена", http.StatusBadRequest)
 		return
 	}
 
 	if password.Password != secretPassword {
+		log.Printf("Введен невенрный пароль %v", password.Password)
 		sendError(w, "Неверный пароль", http.StatusUnauthorized)
 		return
 	}
@@ -116,7 +118,7 @@ func getToken(s string) (string, error) {
 func auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		secretPassword := os.Getenv("TODO_PASSWORD")
+		secretPassword := config.App.PasswordTest
 		if secretPassword == "" {
 			next(w, r)
 			return
