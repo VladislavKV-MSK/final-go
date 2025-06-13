@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go1f/pkg/db"
-	"go1f/pkg/utils"
+	"go1f/pkg/taskdate"
 	"log"
 	"net/http"
 	"sync"
@@ -183,7 +183,7 @@ func handleDoneTask(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// Персчитываем дату для задачи
-		newDate, err := utils.NextDate(time.Now(), task.Date, task.Repeat)
+		newDate, err := taskdate.NextDate(time.Now(), task.Date, task.Repeat)
 		if err != nil {
 			log.Println("Ошибка при пересчете даты задачи из БД")
 			sendError(w, "ошибка при расчете новой даты", http.StatusInternalServerError)
@@ -216,7 +216,7 @@ func nextDayHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Если параметр не пустой парсим его
 	if nowParam != "" {
-		now, err = time.Parse(utils.DateFormat, nowParam)
+		now, err = time.Parse(taskdate.DateFormat, nowParam)
 		if err != nil {
 			log.Println("Ошибка с получением текущей даты")
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -230,7 +230,7 @@ func nextDayHandler(w http.ResponseWriter, r *http.Request) {
 	date := r.FormValue("date")
 	repeat := r.FormValue("repeat")
 
-	date, err = utils.NextDate(now, date, repeat)
+	date, err = taskdate.NextDate(now, date, repeat)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -288,7 +288,7 @@ func checkTask(t *db.Task) (string, error) {
 	}
 
 	now := time.Now()
-	today := now.Format(utils.DateFormat)
+	today := now.Format(taskdate.DateFormat)
 
 	// Обработка пустой даты
 	if t.Date == "" {
@@ -297,7 +297,7 @@ func checkTask(t *db.Task) (string, error) {
 	}
 
 	// Парсинг даты
-	_, err := time.Parse(utils.DateFormat, t.Date)
+	_, err := time.Parse(taskdate.DateFormat, t.Date)
 	if err != nil {
 		return "Поле Date указано неверно", errTask
 	}
@@ -312,7 +312,7 @@ func checkTask(t *db.Task) (string, error) {
 		t.Date = today
 	} else {
 		// С правилом - вычисляем следующую доступную дату
-		next, err := utils.NextDate(now, t.Date, t.Repeat)
+		next, err := taskdate.NextDate(now, t.Date, t.Repeat)
 		if err != nil {
 			return "Неверное правило повторения: " + err.Error(), errTask
 		}

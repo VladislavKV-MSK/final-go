@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"go1f/pkg/config"
-	"go1f/pkg/utils"
+	"go1f/pkg/taskdate"
 
 	_ "modernc.org/sqlite"
 )
@@ -142,7 +142,7 @@ func SearchTasks(s string, limit int) ([]*Task, error) {
 
 	t, err := time.Parse("02.01.2006", s)
 	if err == nil {
-		s = t.Format(utils.DateFormat)
+		s = t.Format(taskdate.DateFormat)
 		date = true
 	}
 
