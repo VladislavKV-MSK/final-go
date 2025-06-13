@@ -5,10 +5,15 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TODO_PORT: 7540
+      TODO_DBFILE: scheduler.db
+      LIMIT_TASKS: 50
+      TODO_PASSWORD: 1234
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.24.x]
+        go-version: [1.24.3]
   
     steps:
     - uses: actions/checkout@v4
